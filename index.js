@@ -1,9 +1,34 @@
 import puppeteer from 'puppeteer';
+import https from 'https';
+
+async function hasInternetConnection() {
+    return new Promise((resolve) => {
+        const req = https.request({
+            method: 'HEAD',
+            host: 'www.google.com',
+            path: '/',
+            timeout: 2000,
+        }, (res) => {
+            resolve(true);
+        });
+        req.on('error', () => resolve(false));
+        req.on('timeout', () => {
+            req.destroy();
+            resolve(false);
+        });
+        req.end();
+    });
+}
 
 (async () => {
+    if (await hasInternetConnection()) {
+        console.log('Internet connection detected. Exiting.');
+        return;
+    }
+
     // Launch the browser and open a new blank page
     const browser = await puppeteer.launch({
-        args: ['--disable-features=HttpsFirstBalancedModeAutoEnable'],
+        args: ['--disable-features=HttpsFirstBalancedModeAutoEnable', "--no-sandbox", "--disable-setuid-sandbox"],
     });
     const page = await browser.newPage();
 
@@ -27,4 +52,4 @@ import puppeteer from 'puppeteer';
     console.log("found logout button");
 
     await browser.close();
-})(); 
+})();
